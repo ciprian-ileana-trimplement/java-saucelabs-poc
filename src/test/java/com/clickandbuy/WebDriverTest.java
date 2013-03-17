@@ -10,10 +10,15 @@ import java.net.MalformedURLException;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import com.clickandbuy.core.model.CapabilityConfiguraton;
 import com.clickandbuy.core.parent.ParentTest;
+import com.saucelabs.common.SauceOnDemandSessionIdProvider;
+import com.saucelabs.junit.SauceOnDemandTestWatcher;
 
 /**
  * Simple {@link RemoteWebDriver} test that demonstrates how to run your Selenium tests with <a href="http://saucelabs.com/ondemand">Sauce OnDemand</a>. *
@@ -21,24 +26,28 @@ import com.clickandbuy.core.parent.ParentTest;
  * @author Ciprian I. Ileana
  * @author Nicolae Petridean
  */
-public class WebDriverTest extends ParentTest {
+public class WebDriverTest extends ParentTest implements SauceOnDemandSessionIdProvider {
 
 	/**
 	 * class logger.
 	 */
-	private static final Logger	logger	= Logger.getLogger(WebDriverTest.class);
+	private static final Logger	logger						= Logger.getLogger(WebDriverTest.class);
+
+	private WebDriver						webDriver				= null;
+
+	/**
+	 * JUnit Rule which will mark the Sauce Job as passed/failed when the test succeeds or fails.
+	 */
+	public @Rule
+	SauceOnDemandTestWatcher	resultReportingTestWatcher	= new SauceOnDemandTestWatcher(this, authentication);
+
+	private String				sessionId;
 
 	/**
 	 * @throws MalformedURLException
 	 */
 	@Before
 	public void setUp() throws MalformedURLException {
-		// webDriver = prepareWebDriver();
-
-		// DesiredCapabilities capabillities = DesiredCapabilities.firefox();
-		// capabillities.setCapability("version", "5");
-		// capabillities.setCapability("platform", Platform.XP);
-		// this.driver = new RemoteWebDriver(new URL("http://martchouk:87335815-89fd-4022-94e0-9c268f5991f9@ondemand.saucelabs.com:80/wd/hub"), capabillities);
 	}
 
 	/**
@@ -46,27 +55,31 @@ public class WebDriverTest extends ParentTest {
 	 */
 	@After
 	public void tearDown() {
-		getWebDriver().quit();
+	}
+
+	@Override
+	public String getSessionId() {
+		return sessionId;
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.clickandbuy.parent.ParentTest#doTest()
-	 */
-	// @Override
-	public void doTest(WebDriver webDriver) {
-		logger.info("Dummy test with WebDriver: [" + webDriver + "]!!!");
-		getWebDriver().get("http://www.amazon.com/");
-		assertEquals("Amazon.com: Online Shopping for Electronics, Apparel, Computers, Books, DVDs & more", webDriver.getTitle());
-
-	}
-
-	/* (non-Javadoc)
-	 * @see com.saucelabs.common.SauceOnDemandSessionIdProvider#getSessionId()
+	 * @see com.clickandbuy.core.parent.ParentTest#doTest(org.openqa.selenium.WebDriver)
 	 */
 	@Override
-	public String getSessionId() {
-		return "MySession_"+System.nanoTime();
+	public void doTest(CapabilityConfiguraton capabilityConfiguraton) throws MalformedURLException {
+		//tearup
+		webDriver = prepareWebDriver(capabilityConfiguraton);
+		sessionId = ((RemoteWebDriver) webDriver).getSessionId().toString();
+
+		//actual test
+		logger.info("Dummy test with WebDriver: [" + webDriver + "]!!!");
+		webDriver.get("http://www.amazon.com/");
+		assertEquals("Amazon.com: Online Shopping for Electronics, Apparel, Computers, Books, DVDs & more", webDriver.getTitle());
+		
+		//teardown
+		webDriver.quit();
 	}
+
 }
